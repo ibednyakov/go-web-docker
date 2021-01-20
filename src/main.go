@@ -84,22 +84,49 @@ func (c *mainController) Get() {
 		// 	P:      per,
 		// }
 
-		log.Printf("Tablename: " + table)
+		log.Printf("Tablename: " + table + " id=" + string(num1))
 		groupId := ColorGroupWithId{id: num1}
 		rows, dbErr := db.Query("SELECT info FROM tmp_data WHERE id = $1", num1)
 		if dbErr != nil {
 			log.Fatal(dbErr)
 		}
-		log.Println(row)
+		defer rows.Close()
 
-		for row := range rows {
-			var i interface{}
-			err = json.Unmarshal(row, &i)
+		data := make(ColorGroupMap)
+		for rows.Next() {
+			//err = rows.Scan(&groupId.group)
+			err = rows.Scan(&data)
 			if err != nil {
-				log.Fatal(err)
+				panic(fmt.Sprintf("rows.Scan: %v", err))
 			}
-			groupId.group = i.(map[string]interface{})
+			fmt.Println("Data:")
+			fmt.Println(data)
+
+			fmt.Println("Assigning:")
+			person := data["Person"].(map[string]interface{})
+			groupId.group.P.Fn = person["fn"].(string)
+			groupId.group.P.Ln = person["ln"].(string)
+
+			groupId.group.ID1 = int(data["ID1"].(float64))
+			groupId.group.ID2 = int(data["ID2"].(float64))
+			if val, ok := data["Name"]; ok {
+				groupId.group.Name = val.(string)
+			}
+			fmt.Println("done:")
 		}
+
+		fmt.Println("DONE:")
+		//rows.Scan(&groupId.group)
+		// for rows.Next() {
+		//
+		// 	log.Println(row)
+		// 	var i interface{}
+		// 	err = json.Unmarshal(row, &i)
+		// 	if err != nil {
+		// 		log.Fatal(err)
+		// 	}
+		// 	groupId.group = i.(map[string]interface{})
+		// }
 
 		if b, err := json.Marshal(groupId.group); err != nil {
 			fmt.Println("error:", err)
