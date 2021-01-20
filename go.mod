@@ -5,6 +5,7 @@ require (
 	github.com/alexkohler/nakedret v1.0.0 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/beego/bee v1.12.3 // indirect
+	github.com/lib/pq v1.7.0
 	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
 	github.com/mibk/dupl v1.0.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect

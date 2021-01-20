@@ -3,7 +3,7 @@
 FROM golang:1.13 as builder
 
 ENV APP_USER app
-ENV APP_HOME /go/src/mathapp
+ENV APP_HOME /go/src/go-pg-app
 
 RUN groupadd $APP_USER && useradd -m -g $APP_USER -l $APP_USER
 RUN mkdir -p $APP_HOME && chown -R $APP_USER:$APP_USER $APP_HOME
@@ -16,12 +16,12 @@ COPY go.sum .
 
 #RUN go mod download
 RUN go mod verify
-RUN go build -o mathapp
+RUN go build -o go-pg-app
 
 FROM debian:buster
 
 ENV APP_USER app
-ENV APP_HOME /go/src/mathapp
+ENV APP_HOME /go/src/go-pg-app
 
 RUN groupadd $APP_USER && useradd -m -g $APP_USER -l $APP_USER
 RUN mkdir -p $APP_HOME
@@ -29,8 +29,8 @@ WORKDIR $APP_HOME
 
 COPY src/conf/ conf/
 COPY src/views/ views/
-COPY --chown=0:0 --from=builder $APP_HOME/mathapp $APP_HOME
+COPY --chown=0:0 --from=builder $APP_HOME/go-pg-app $APP_HOME
 
 EXPOSE 8010
 USER $APP_USER
-CMD ["./mathapp"]
+CMD ["./go-pg-app"]

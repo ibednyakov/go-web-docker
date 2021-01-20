@@ -19,3 +19,10 @@ services:
     ports:
       - 8080:8080
     container_name: testing_pg_db_adminer
+
+  go-pg-app:
+    image: go-pg-app-deploy
+    restart: always
+    container_name: go-pg-app-test
+    ports:
+      - 8010:8010

@@ -5,10 +5,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
+	"database/sql"
+
 	"github.com/astaxie/beego"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -16,15 +20,12 @@ const (
 	User      = "User"
 	UserId    = "UserId"
 	Operation = ":operation"
+	ConnStr   = "user=dbUser password='mysecretpassword' host='db' sslmode=disable port=5432 connect_timeout=3 dbname=InfoTestDb"
 )
 
 func main() {
-	/* This would match routes like the following:
-	   /sum/3/5
-	   /product/6/23
-	   ...
-	*/
-	beego.Router("/:operation/:num1:int/:num2:int", &mainController{})
+
+	beego.Router("/:operation/:tblname/:num1:int/:num2:int", &mainController{})
 	beego.Run()
 }
 
@@ -32,22 +33,11 @@ type mainController struct {
 	beego.Controller
 }
 
-type Person struct {
-	Fn string
-	Ln string
-}
-type ColorGroup struct {
-	ID1    int
-	ID2    int
-	Name   string
-	Colors []string
-	P      Person `json:"Person"`
-}
-
 func (c *mainController) Get() {
 
 	//Obtain the values of the route parameters defined in the route above
 	operation := c.Ctx.Input.Param(Operation)
+	table := c.Ctx.Input.Param(":tblname")
 	num1, _ := strconv.Atoi(c.Ctx.Input.Param(":num1"))
 	num2, _ := strconv.Atoi(c.Ctx.Input.Param(":num2"))
 
@@ -64,21 +54,57 @@ func (c *mainController) Get() {
 	case "product":
 		c.Data["result"] = multiply(num1, num2)
 	case "json":
-		per := Person{Fn: "John",
-			Ln: "Doe",
+		db, err := sql.Open("postgres", ConnStr)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(-1)
 		}
-		group := ColorGroup{
-			ID1:    num1,
-			ID2:    num2,
-			Name:   "Reds",
-			Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
-			P:      per,
+		defer db.Close()
+		// orderInfo := OrderWithId{id: num1}
+		// dbErr := db.QueryRow("SELECT * FROM $1 WHERE id = $2", table, num1).Scan(&orderInfo.id, &orderInfo.order)
+
+		// if dbErr != nil {
+		// 	log.Fatal(dbErr)
+		// }
+		// if b, err := json.Marshal(orderInfo); err != nil {
+		// 	fmt.Println("error:", err)
+		// } else {
+		// 	c.Data["json"] = &orderInfo
+		// 	c.ServeJSON()
+		// 	os.Stdout.Write(b)
+		// }
+		// per := Person{Fn: "John",
+		// 	Ln: "Doe",
+		// }
+		// group := ColorGroup{
+		// 	ID1:    num1,
+		// 	ID2:    num2,
+		// 	Name:   "Reds",
+		// 	Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
+		// 	P:      per,
+		// }
+
+		log.Printf("Tablename: " + table)
+		groupId := ColorGroupWithId{id: num1}
+		rows, dbErr := db.Query("SELECT info FROM tmp_data WHERE id = $1", num1)
+		if dbErr != nil {
+			log.Fatal(dbErr)
+		}
+		log.Println(row)
+
+		for row := range rows {
+			var i interface{}
+			err = json.Unmarshal(row, &i)
+			if err != nil {
+				log.Fatal(err)
+			}
+			groupId.group = i.(map[string]interface{})
 		}
 
-		if b, err := json.Marshal(group); err != nil {
+		if b, err := json.Marshal(groupId.group); err != nil {
 			fmt.Println("error:", err)
 		} else {
-			c.Data["json"] = &group
+			c.Data["json"] = &groupId.group
 			c.ServeJSON()
 			os.Stdout.Write(b)
 		}
