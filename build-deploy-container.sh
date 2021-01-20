@@ -1,5 +1,5 @@
 #!/bin/bash
 
 docker build \
-	-t mathapp-deploy \
+	-t restful-db-app-deploy \
 	-f Dockerfile.deploy_1.13 .

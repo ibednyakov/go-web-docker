@@ -2,112 +2,125 @@
 
 package main
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"strconv"
 
-	"github.com/astaxie/beego"
+import (
+  "encoding/json"
+  "log"
+  "net/http"
+
+  "github.com/gorilla/mux"
+  "github.com/jinzhu/gorm"
+  "github.com/rs/cors"
+
+  _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-const (
-	Users     = "Users"
-	User      = "User"
-	UserId    = "UserId"
-	Operation = ":operation"
+type Driver struct {
+  gorm.Model
+  Name     string
+  License  string
+  Cars     []Car
+}
+
+type Car struct {
+  gorm.Model
+  Year       int
+  Make       string
+  ModelName  string
+  DriverID   int
+}
+
+var db *gorm.DB
+var err error
+
+var (
+
+    drivers = []Driver{
+        {Name: "Jimmy Johnson", License: "ABC123"},
+        {Name: "Howard Hills",  License: "XYZ789"},
+        {Name: "Craig Colbin",  License: "DEF333"},
+    }
+
+    cars = []Car{
+        {Year: 2000, Make: "Toyota", ModelName: "Tundra", DriverID: 1},
+        {Year: 2001, Make: "Honda",  ModelName: "Accord", DriverID: 1},
+        {Year: 2002, Make: "Nissan", ModelName: "Sentra", DriverID: 2},
+        {Year: 2003, Make: "Ford",   ModelName: "F-150",  DriverID: 3},
+    }
+
 )
 
 func main() {
-	/* This would match routes like the following:
-	   /sum/3/5
-	   /product/6/23
-	   ...
-	*/
-	beego.Router("/:operation/:num1:int/:num2:int", &mainController{})
-	beego.Run()
+
+  router := mux.NewRouter()
+
+  db, err = gorm.Open( "postgres", "host=db port=5432 user=postgres dbname=postgres sslmode=disable password=postgres")
+
+  if err != nil {
+    panic("failed to connect database")
+  }
+
+  defer db.Close()
+
+  db.AutoMigrate(&Driver{})
+  db.AutoMigrate(&Car{})
+
+  for index := range cars {
+      db.Create(&cars[index])
+  }
+
+  for index := range drivers {
+      db.Create(&drivers[index])
+  }
+
+  router.HandleFunc("/cars", GetCars).Methods("GET")
+  router.HandleFunc("/cars/{id}", GetCar).Methods("GET")
+  router.HandleFunc("/drivers/{id}", GetDriver).Methods("GET")
+  router.HandleFunc("/cars/{id}", DeleteCar).Methods("DELETE")
+
+  handler := cors.Default().Handler(router)
+
+  log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
-type mainController struct {
-	beego.Controller
+func GetCars(w http.ResponseWriter, r *http.Request) {
+  var cars []Car
+  db.Find(&cars)
+
+  json.NewEncoder(w).Encode(&cars)
 }
 
-type Person struct {
-	Fn string
-	Ln string
-}
-type ColorGroup struct {
-	ID1    int
-	ID2    int
-	Name   string
-	Colors []string
-	P      Person `json:"Person"`
+func GetCar(w http.ResponseWriter, r *http.Request) {
+  params := mux.Vars(r)
+  var car Car
+
+  db.First(&car, params["id"])
+
+  json.NewEncoder(w).Encode(&car)
 }
 
-func (c *mainController) Get() {
+func GetDriver(w http.ResponseWriter, r *http.Request) {
+  params := mux.Vars(r)
+  var driver Driver
+  var cars   []Car
 
-	//Obtain the values of the route parameters defined in the route above
-	operation := c.Ctx.Input.Param(Operation)
-	num1, _ := strconv.Atoi(c.Ctx.Input.Param(":num1"))
-	num2, _ := strconv.Atoi(c.Ctx.Input.Param(":num2"))
+  db.First(&driver, params["id"])
+  db.Model(&driver).Related(&cars)
 
-	//Set the values for use in the template
-	c.Data["operation"] = operation
-	c.Data["num1"] = num1
-	c.Data["num2"] = num2
-	c.TplName = "result.html"
+  driver.Cars = cars
 
-	// Perform the calculation depending on the 'operation' route parameter
-	switch operation {
-	case "sum":
-		c.Data["result"] = add(num1, num2)
-	case "product":
-		c.Data["result"] = multiply(num1, num2)
-	case "json":
-		per := Person{Fn: "John",
-			Ln: "Doe",
-		}
-		group := ColorGroup{
-			ID1:    num1,
-			ID2:    num2,
-			Name:   "Reds",
-			Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
-			P:      per,
-		}
-
-		if b, err := json.Marshal(group); err != nil {
-			fmt.Println("error:", err)
-		} else {
-			c.Data["json"] = &group
-			c.ServeJSON()
-			os.Stdout.Write(b)
-		}
-	default:
-		c.TplName = "invalid-route.html"
-	}
+  json.NewEncoder(w).Encode(&driver)
 }
 
-func (c *mainController) Put() {
-	operation := c.Ctx.Input.Param(Operation)
-	switch operation {
-	case Users:
-	default:
-		fmt.Println(operation)
-	}
-}
+func DeleteCar(w http.ResponseWriter, r *http.Request) {
+  params := mux.Vars(r)
+  var car Car
+  db.First(&car, params["id"])
+  db.Delete(&car)
 
-func (c *mainController) Post() {
-	operation := c.Ctx.Input.Param(Operation)
-	switch operation {
-	default:
-		fmt.Println(operation)
-	}
-}
+  var cars []Car
 
-func add(n1, n2 int) int {
-	return n1 + n2
-}
+  db.Find(&cars)
 
-func multiply(n1, n2 int) int {
-	return n1 * n2
+  json.NewEncoder(w).Encode(&cars)
 }

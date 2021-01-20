@@ -5,8 +5,11 @@ require (
 	github.com/alexkohler/nakedret v1.0.0 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/beego/bee v1.12.3 // indirect
+	github.com/gorilla/mux v1.8.0
+	github.com/jinzhu/gorm v1.9.16
 	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
 	github.com/mibk/dupl v1.0.0 // indirect
+	github.com/rs/cors v1.7.0
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stripe/safesql v0.2.0 // indirect
