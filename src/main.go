@@ -74,8 +74,8 @@ func (c *mainController) Get() {
 			Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
 			P:      per,
 		}
-		b, err := json.Marshal(group)
-		if err != nil {
+
+		if b, err := json.Marshal(group); err != nil {
 			fmt.Println("error:", err)
 		} else {
 			c.Data["json"] = &group
