@@ -26,3 +26,8 @@ services:
     container_name: go-pg-app-test
     ports:
       - 8010:8010
+
+  redis:
+    build: ./in-memory-db
+    restart: always
+    container_name: testing_redis_db

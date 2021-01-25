@@ -20,7 +20,7 @@ const (
 	User      = "User"
 	UserId    = "UserId"
 	Operation = ":operation"
-	ConnStr   = "user=dbUser password='mysecretpassword' host='db' sslmode=disable port=5432 connect_timeout=3 dbname=InfoTestDb"
+	PqConnStr = "user=dbUser password='mysecretpassword' host='db' sslmode=disable port=5432 connect_timeout=3 dbname=InfoTestDb"
 )
 
 func main() {
@@ -54,7 +54,7 @@ func (c *mainController) Get() {
 	case "product":
 		c.Data["result"] = multiply(num1, num2)
 	case "json":
-		db, err := sql.Open("postgres", ConnStr)
+		db, err := sql.Open("postgres", PqConnStr)
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(-1)
@@ -115,7 +115,7 @@ func (c *mainController) Get() {
 			fmt.Println("done:")
 		}
 
-		fmt.Println("DONE:")
+		push_data("smth", &data)
 		//rows.Scan(&groupId.group)
 		// for rows.Next() {
 		//
